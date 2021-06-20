@@ -14,11 +14,22 @@ let stars = [];
 let blockColors;
 let currentBlock, nextBlock;
 let currentX, currentY, currentRotate, nextRotate;
+let lastBlock, lastX, lastY, lastRotate;
 let score = 0;
 let charX, charY, charZ, charDirection, preCharX, preCharY, preCharZ, preCharDirection;
 let movingStartTime = 0, movingSignal = false, footDirection = false;
 
-let blockMap = [];
+let blockWidth = [
+    [4, 1, 4, 1],
+    [2, 2, 2, 2],
+    [3, 2, 3, 2],
+    [3, 2, 3, 2],
+    [3, 2, 3, 2],
+    [3, 2, 3, 2],
+    [3, 2, 3, 2]
+];
+let blockMap;
+let lastBlock
 
 let gameStart = true;
 let gameStartTime = -30;
@@ -65,12 +76,19 @@ function setup() {
     }
 
     currentBlock = getRandomInt(0, 6);
+    currentRotate = getRandomInt(0, 3);
+    currentX = getRandomInt(0, 10 - blockWidth[currentBlock][currentRotate]);
+    currentY = 20 - blockWidth[currentBlock][(currentRotate + 1) % 4];
     nextBlock = getRandomInt(0, 6);
     nextRotate = getRandomInt(0, 3);
 
     charX = 0; charY = 0; charZ = 0; charDirection = DIRECTION_REAR;
     preCharX = 0; preCharY = 0; preCharZ = 0; preCharDirection = DIRECTION_REAR;
+
+    blockMap = Array.from(Array(10), () => Array(20).fill(0));
 }
+
+let testBlock = 0, testRotate = 0;
 
 function draw() {
     background(255);
@@ -130,20 +148,76 @@ function draw() {
         drawCubeTop(color(40), - 2 * height / size * sin(60),  + 4 * height / size)
         drawCubeSide(color(255, 50), - 2 * height / size * sin(60), 0);
 
-        for (let i = 0; i < blockMap.length; i++) {
-            drawBlock(blockMap[i].type, blockMap[i].x, blockMap[i].y, blockMap[i].r);
-        }
+        let fallingTime = 60;
 
-        if (round(frameCount / 60) - round(lastFellTime / 60) <= 19) {
-            drawBlock(currentBlock, 0, 19 - (round(frameCount / 60) - round(lastFellTime / 60)), currentRotate);
+        // drawBlock(testBlock, 3, 0, testRotate);
+
+        // /*
+        if ((frameCount - lastFellTime) / fallingTime <= 20 && (checkBlockInfo(currentBlock, currentX, currentY - 1, currentRotate))) {
+            if ((frameCount - lastFellTime) % fallingTime === 0) { // 정각에 딱 떨어뜨리기
+            // if (frameCount / fallingTime - lastFellTime / fallingTime === (round(frameCount / fallingTime) - round(lastFellTime / fallingTime))) { // 정각에 딱 떨어뜨리기
+                print(currentBlock, currentX, currentY - 1, currentRotate, checkBlockInfo(currentBlock, currentX, currentY - 1, currentRotate));
+                currentY--;
+            } else {
+                print("time not work : ", (frameCount - lastFellTime) % fallingTime);
+            }
+
+            let blockInfo = getBlockCor(currentBlock, currentX, currentY, currentRotate);
+            for (let i = 0; i < 10; i++) {
+                for (let j = 0; j < 20; j++) {
+                    if (blockMap[i][j]) {
+                        drawBlockCube(-1, i, j);
+                    }
+
+                    for (let info of blockInfo) {
+                        if (info.x === i && info.y === j) {
+                            drawBlockCube(currentBlock, i, j);
+                        }
+                    }
+                    // if (currentX === i && currentY === j) {
+                    //     drawBlock(currentBlock, currentX, currentY, currentRotate);
+                    // }
+                }
+            }
+
         } else { // falling finish
-            drawBlock(currentBlock, 0, 0, currentRotate);
+            print(currentBlock, currentX, currentY, currentRotate);
+
+
+            for (let i = 0; i < 10; i++) {
+                for (let j = 0; j < 20; j++) {
+                    if (blockMap[i][j]) {
+                        drawBlockCube(-1, i, j);
+                    }
+                }
+            }
+
+            // drawBlock(currentBlock, currentX, currentY, currentRotate);
+            setBlockInfo(currentBlock, currentX, currentY, currentRotate);
+            // setBlockInfo(lastBlock, lastX, lastY, lastRotate);
+            // let block = { type : currentBlock, x : currentX, y : currentY, r : currentRotate };
+            // blockMap.push(block);
+
+            // drawBlock(currentBlock, 0, 0, currentRotate);
+            // 2단계 전 블럭을 map에 고정
+
+
             lastFellTime = frameCount;
+            lastBlock = currentBlock;
+            lastX = currentX;
+            lastY = currentY;
+            lastRotate = currentRotate;
+
             currentRotate = nextRotate;
             currentBlock = nextBlock;
+            currentX = getRandomInt(0, 10 - blockWidth[currentBlock][currentRotate]);
+            currentY = 20 - blockWidth[currentBlock][(currentRotate + 1) % 4];
             nextRotate = getRandomInt(0, 3);
             nextBlock = getRandomInt(0, 6);
+
         }
+
+         // */
 
         drawCharacter(charX, charY, charZ, charDirection, preCharX, preCharY, preCharZ, preCharDirection);
         // }
@@ -161,6 +235,406 @@ function draw() {
         }
     }
 
+}
+
+function checkBlockUnit(px, py) {
+    if (!(px >= 0 && px < 10 && py >= 0 && py < 20)) {
+        return false;
+    } else if (blockMap[px][py]) {
+        return false;
+    }
+
+    return true;
+}
+
+function checkBlockInfo(type, x, y, r)  {
+    switch (type) {
+        case 0: {
+            switch (r % 2) {
+                case 0: {
+                    for (let i = 0; i < 4; i++) {
+                        if (!checkBlockUnit(x + i, y)) {
+                            return false;
+                        }
+                    }
+                    return true;
+                }
+                case 1: {
+                    for (let i = 0; i < 4; i++) {
+                        if (!checkBlockUnit(x, y + i)) {
+                            return false;
+                        }
+                    }
+                    return true;
+                }
+            }
+
+            break;
+        }
+        case 1: {
+            for (let i = 0; i < 2; i++) {
+                for (let j = 0; j < 2; j++) {
+                    if (!checkBlockUnit(x + i, y + j)) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+        case 2: {
+            switch (r) {
+                case 0: {
+                    for (let i = 0; i < 3; i++) {
+                        if (!checkBlockUnit(x + i, y)) {
+                            return false;
+                        }
+                    }
+                    return checkBlockUnit(x + 1, y + 1);
+                }
+                case 1: {
+                    for (let i = 0; i < 3; i++) {
+                        if (!checkBlockUnit(x, y + i)) {
+                            return false;
+                        }
+                    }
+                    return checkBlockUnit(x + 1, y + 1);
+                }
+                case 2: {
+                    for (let i = 0; i < 3; i++) {
+                        if (!checkBlockUnit(x + i, y + 1)) {
+                            return false;
+                        }
+                    }
+                    return checkBlockUnit(x + 1, y);
+                }
+                case 3: {
+                    for (let i = 0; i < 3; i++) {
+                        if (!checkBlockUnit(x + 1, y + i)) {
+                            return false;
+                        }
+                    }
+                    return checkBlockUnit(x, y + 1);
+                }
+            }
+            break;
+        }
+        case 3: {
+            switch (r) {
+                case 0: {
+                    for (let i = 0; i < 3; i++) {
+                        if (!checkBlockUnit(x + i, y)) {
+                            return false;
+                        }
+                    }
+                    return checkBlockUnit(x + 2, y + 1);
+                }
+                case 1: {
+                    for (let i = 0; i < 3; i++) {
+                        if (!checkBlockUnit(x, y + i)) {
+                            return false;
+                        }
+                    }
+                    return checkBlockUnit(x + 1, y);
+                }
+                case 2: {
+                    for (let i = 0; i < 3; i++) {
+                        if (!checkBlockUnit(x + i, y + 1)) {
+                            return false;
+                        }
+                    }
+                    return checkBlockUnit(x, y);
+                }
+                case 3: {
+                    for (let i = 0; i < 3; i++) {
+                        if (!checkBlockUnit(x + 1, y + i)) {
+                            return false;
+                        }
+                    }
+                    return checkBlockUnit(x, y + 2);
+                }
+            }
+            break;
+        }
+        case 4: {
+            switch (r) {
+                case 0: {
+                    for (let i = 0; i < 3; i++) {
+                        if (!checkBlockUnit(x + i, y)) {
+                            return false;
+                        }
+                    }
+                    return checkBlockUnit(x, y + 1);
+                }
+                case 1: {
+                    for (let i = 0; i < 3; i++) {
+                        if (!checkBlockUnit(x, y + i)) {
+                            return false;
+                        }
+                    }
+                    return checkBlockUnit(x + 1, y + 2);
+                }
+                case 2: {
+                    for (let i = 0; i < 3; i++) {
+                        if (!checkBlockUnit(x + i, y + 1)) {
+                            return false;
+                        }
+                    }
+                    return checkBlockUnit(x + 2, y);
+                }
+                case 3: {
+                    for (let i = 0; i < 3; i++) {
+                        if (!checkBlockUnit(x + 1, y + i)) {
+                            return false;
+                        }
+                    }
+                    return checkBlockUnit(x, y);
+                }
+            }
+            break;
+        }
+        case 5: {
+            switch (r % 2) {
+                case 0: {
+                    if (!checkBlockUnit(x, y)) {
+                        return false;
+                    }
+                    if (!checkBlockUnit(x + 1, y)) {
+                        return false;
+                    }
+                    if (!checkBlockUnit(x + 1, y + 1)) {
+                        return false;
+                    }
+                    return checkBlockUnit(x + 2, y + 1);
+                }
+                case 1: {
+                    if (!checkBlockUnit(x + 1, y)) {
+                        return false;
+                    }
+                    if (!checkBlockUnit(x + 1, y + 1)) {
+                        return false;
+                    }
+                    if (!checkBlockUnit(x, y + 1)) {
+                        return false;
+                    }
+                    return checkBlockUnit(x, y + 2);
+
+
+                }
+            }
+            break;
+        }
+        case 6: {
+            switch (r % 2) {
+                case 0: {
+                    if (!checkBlockUnit(x, y + 1)) {
+                        return false;
+                    }
+                    if (!checkBlockUnit(x + 1, y + 1)) {
+                        return false;
+                    }
+                    if (!checkBlockUnit(x + 1, y)) {
+                        return false;
+                    }
+                    return checkBlockUnit(x + 2, y);
+                }
+                case 1: {
+                    if (!checkBlockUnit(x, y)) {
+                        return false;
+                    }
+                    if (!checkBlockUnit(x, y + 1)) {
+                        return false;
+                    }
+                    if (!checkBlockUnit(x + 1, y + 1)) {
+                        return false;
+                    }
+                    return checkBlockUnit(x + 1, y + 2);
+
+
+                }
+            }
+            break;
+        }
+    }
+}
+
+function setBlockInfo(type, x, y, r) {
+    switch (type) {
+        case 0: {
+            switch (r % 2) {
+                case 0: {
+                    for (let i = 0; i < 4; i++) {
+                        blockMap[x + i][y] = 1;
+                    }
+                    break;
+                }
+                case 1: {
+                    for (let i = 0; i < 4; i++) {
+                        blockMap[x][y + i] = 1;
+                    }
+                    break;
+                }
+            }
+
+            break;
+        }
+        case 1: {
+            for (let i = 0; i < 2; i++) {
+                for (let j = 0; j < 2; j++) {
+                    blockMap[x + i][y + j] = 1;
+                }
+            }
+            break;
+        }
+        case 2: {
+            switch (r) {
+                case 0: {
+                    for (let i = 0; i < 3; i++) {
+                        blockMap[x + i][y] = 1;
+                    }
+                    blockMap[x + 1][y + 1] = 1;
+
+                    break;
+                }
+                case 1: {
+                    for (let i = 0; i < 3; i++) {
+                        blockMap[x][y + i] = 1;
+                    }
+                    blockMap[x + 1][y + 1] = 1;
+
+                    break;
+                }
+                case 2: {
+                    for (let i = 0; i < 3; i++) {
+                        blockMap[x + i][y + 1] = 1;
+                    }
+                    blockMap[x + 1][y] = 1;
+
+                    break;
+                }
+                case 3: {
+                    for (let i = 0; i < 3; i++) {
+                        blockMap[x + 1][y + i] = 1;
+                    }
+                    blockMap[x][y + 1] = 1;
+
+                    break;
+                }
+            }
+            break;
+        }
+        case 3: {
+            switch (r) {
+                case 0: {
+                    for (let i = 0; i < 3; i++) {
+                        blockMap[x + i][y] = 1;
+                    }
+                    blockMap[x + 2][y + 1] = 1;
+
+                    break;
+                }
+                case 1: {
+                    for (let i = 0; i < 3; i++) {
+                        blockMap[x][y + i] = 1;
+                    }
+                    blockMap[x + 1][y] = 1;
+
+                    break;
+                }
+                case 2: {
+                    for (let i = 0; i < 3; i++) {
+                        blockMap[x + i][y + 1] = 1;
+                    }
+                    blockMap[x][y] = 1;
+
+                    break;
+                }
+                case 3: {
+                    for (let i = 0; i < 3; i++) {
+                        blockMap[x + 1][y + i] = 1;
+                    }
+                    blockMap[x][y + 2] = 1;
+
+                    break;
+                }
+            }
+            break;
+        }
+        case 4: {
+            switch (r) {
+                case 0: {
+                    for (let i = 0; i < 3; i++) {
+                        blockMap[x + i][y] = 1;
+                    }
+                    blockMap[x][y + 1] = 1;
+
+                    break;
+                }
+                case 1: {
+                    for (let i = 0; i < 3; i++) {
+                        blockMap[x][y + i] = 1;
+                    }
+                    blockMap[x + 1][y + 2] = 1;
+
+                    break;
+                }
+                case 2: {
+                    for (let i = 0; i < 3; i++) {
+                        blockMap[x + i][y + 1] = 1;
+                    }
+                    blockMap[x + 2][y] = 1;
+
+                    break;
+                }
+                case 3: {
+                    for (let i = 0; i < 3; i++) {
+                        blockMap[x + 1][y + i] = 1;
+                    }
+                    blockMap[x][y] = 1;
+
+                    break;
+                }
+            }
+            break;
+        }
+        case 5: {
+            switch (r % 2) {
+                case 0: {
+                    blockMap[x][y] = 1;
+                    blockMap[x + 1][y] = 1;
+                    blockMap[x + 1][y + 1] = 1;
+                    blockMap[x + 2][y + 1] = 1;
+                    break;
+                }
+                case 1: {
+                    blockMap[x + 1][y] = 1;
+                    blockMap[x + 1][y + 1] = 1;
+                    blockMap[x][y + 1] = 1;
+                    blockMap[x][y + 2] = 1;
+                    break;
+                }
+            }
+            break;
+        }
+        case 6: {
+            switch (r % 2) {
+                case 0: {
+                    blockMap[x][y + 1] = 1;
+                    blockMap[x + 1][y + 1] = 1;
+                    blockMap[x + 1][y] = 1;
+                    blockMap[x + 2][y] = 1;
+                    break;
+                }
+                case 1: {
+                    blockMap[x][y] = 1;
+                    blockMap[x][y + 1] = 1;
+                    blockMap[x + 1][y + 1] = 1;
+                    blockMap[x + 1][y + 2] = 1;
+                    break;
+                }
+            }
+            break;
+        }
+    }
 }
 
 function drawCharacter(x, y, z, r, px, py, pz, pr) {
@@ -462,6 +936,58 @@ function drawCubeSide(c, px, py) {
     pop();
 }
 
+function drawBlockCube(type, x, y) {
+    push();
+    let unit = height / (size * 5);
+    let sideX = 2 * height / size * sin(60) * 0.3;
+    let sideY = height / size * 0.3;
+    let offsetX = unit * sin(60);
+    let offsetY = unit * cos(60);
+    translate(-2 * height / size * sin(60) + sideX / 2, 4 * height / size - sideY / 2)
+    translate(x * offsetX, -y * unit + x * offsetY);
+
+    let frontColor, topColor, sideColor;
+    if (type === -1) {
+        frontColor = color('#1E1E1E');
+        topColor = color('#464646');
+        sideColor = color('#505050');
+    } else {
+        frontColor = blockColors[type].front;
+        topColor = blockColors[type].top;
+        sideColor = blockColors[type].side;
+    }
+
+
+    // front
+    fill(frontColor);
+    beginShape();
+    vertex(0, 0);
+    vertex(0, -unit);
+    vertex(offsetX, -unit + offsetY);
+    vertex(offsetX, offsetY);
+    endShape();
+
+    // top
+    fill(topColor);
+    beginShape();
+    vertex(0, -unit);
+    vertex(sideX, -unit - sideY);
+    vertex(sideX + offsetX, -unit - sideY + offsetY);
+    vertex(offsetX, -unit + offsetY);
+    endShape();
+
+    // side
+    fill(sideColor);
+    beginShape();
+    vertex(offsetX, -unit + offsetY);
+    vertex(offsetX + sideX, -unit + offsetY - sideY);
+    vertex(offsetX + sideX, offsetY - sideY);
+    vertex(offsetX, offsetY);
+    endShape();
+
+    pop();
+}
+
 function drawBackground() {
     for (let i = 0; i < height * 2; i += 5) {
         let c = lerpColor(color('#093E50'), color('#1E1A2B'), i / sqrt(width * height));
@@ -488,7 +1014,7 @@ function drawBlock(type, x, y, r) {
     switch (type) {
         case 0: { // I형
             noStroke();
-            switch (r) {
+            switch (r % 2) {
                 case 0: {
                     fill(blockColors[type].front);
                     beginShape();
@@ -1280,6 +1806,481 @@ function drawBlock(type, x, y, r) {
     pop();
 }
 
+function getBlockCor(type, x, y, r) {
+    let result = [];
+    switch (type) {
+        case 0: {
+            switch (r % 2) {
+                case 0: {
+                    for (let i = 0; i < 4; i++) {
+                        result.push({ x : x + i, y : y });
+                    }
+                    break;
+                }
+                case 1: {
+                    for (let i = 0; i < 4; i++) {
+                        result.push({ x : x, y : y + i });
+                    }
+                    break;
+                }
+            }
+
+            break;
+        }
+        case 1: {
+            for (let i = 0; i < 2; i++) {
+                for (let j = 0; j < 2; j++) {
+                    result.push({ x : x + i, y : y + j});
+                }
+            }
+            break;
+        }
+        case 2: {
+            switch (r) {
+                case 0: {
+                    for (let i = 0; i < 3; i++) {
+                        result.push({ x : x + i, y : y});
+                    }
+                    result.push({ x : x + 1, y : y + 1});
+
+                    break;
+                }
+                case 1: {
+                    for (let i = 0; i < 3; i++) {
+                        result.push({ x : x, y : y + i});
+                    }
+                    result.push({ x : x + 1, y : y + 1});
+
+                    break;
+                }
+                case 2: {
+                    for (let i = 0; i < 3; i++) {
+                        result.push({ x : x + i, y : y + 1});
+                    }
+                    result.push({ x : x + 1, y : y});
+
+                    break;
+                }
+                case 3: {
+                    for (let i = 0; i < 3; i++) {
+                        result.push({ x : x + 1, y : y + i});
+                    }
+                    result.push({ x : x, y : y + 1});
+
+                    break;
+                }
+            }
+            break;
+        }
+        case 3: {
+            switch (r) {
+                case 0: {
+                    for (let i = 0; i < 3; i++) {
+                        result.push({ x : x + i, y : y});
+                    }
+                    result.push({ x : x + 2, y : y + 1});
+
+                    break;
+                }
+                case 1: {
+                    for (let i = 0; i < 3; i++) {
+                        result.push({ x : x, y : y + i});
+                    }
+                    result.push({ x : x + 1, y : y});
+
+                    break;
+                }
+                case 2: {
+                    for (let i = 0; i < 3; i++) {
+                        result.push({ x : x + i, y : y + 1});
+                    }
+                    result.push({ x : x, y : y});
+
+                    break;
+                }
+                case 3: {
+                    for (let i = 0; i < 3; i++) {
+                        result.push({ x : x + 1, y : y + i});
+                    }
+                    result.push({ x : x, y : y + 2});
+
+                    break;
+                }
+            }
+            break;
+        }
+        case 4: {
+            switch (r) {
+                case 0: {
+                    for (let i = 0; i < 3; i++) {
+                        result.push({ x : x + i, y : y});
+                    }
+                    result.push({ x : x, y : y + 1});
+
+                    break;
+                }
+                case 1: {
+                    for (let i = 0; i < 3; i++) {
+                        result.push({ x : x, y : y + i});
+                    }
+                    result.push({ x : x + 1, y : y + 2});
+
+                    break;
+                }
+                case 2: {
+                    for (let i = 0; i < 3; i++) {
+                        result.push({ x : x + i, y : y + 1});
+                    }
+                    result.push({ x : x + 2, y : y});
+
+                    break;
+                }
+                case 3: {
+                    for (let i = 0; i < 3; i++) {
+                        result.push({ x : x + 1, y : y + i});
+                    }
+                    result.push({ x : x, y : y});
+
+                    break;
+                }
+            }
+            break;
+        }
+        case 5: {
+            switch (r % 2) {
+                case 0: {
+                    result.push({ x : x, y : y});
+                    result.push({ x : x + 1, y : y});
+                    result.push({ x : x + 1, y : y + 1});
+                    result.push({ x : x + 2, y : y + 1});
+                    break;
+                }
+                case 1: {
+                    result.push({ x : x + 1, y : y});
+                    result.push({ x : x + 1, y : y + 1});
+                    result.push({ x : x, y : y + 1});
+                    result.push({ x : x, y : y + 2});
+                    break;
+                }
+            }
+            break;
+        }
+        case 6: {
+            switch (r % 2) {
+                case 0: {
+                    result.push({ x : x, y : y + 1});
+                    result.push({ x : x + 1, y : y + 1});
+                    result.push({ x : x + 1, y : y});
+                    result.push({ x : x + 2, y : y});
+                    break;
+                }
+                case 1: {
+                    result.push({ x : x, y : y});
+                    result.push({ x : x, y : y + 1});
+                    result.push({ x : x + 1, y : y + 1});
+                    result.push({ x : x + 1, y : y + 2});
+                    break;
+                }
+            }
+            break;
+        }
+    }
+    return result;
+}
+
+function drawBlockFront(type, x, y, r) {
+    push();
+    let unit = height / (size * 5);
+    let sideX = 2 * height / size * sin(60) * 0.3;
+    let sideY = height / size * 0.3;
+    let offsetX = unit * sin(60);
+    let offsetY = unit * cos(60);
+    translate(-2 * height / size * sin(60) + sideX / 2, 4 * height / size - sideY / 2)
+    translate(x * offsetX, -y * unit + x * offsetY);
+    noStroke();
+    fill(blockColors[type].front);
+    switch (type) {
+        case 0: { // I형
+            switch (r) {
+                case 0: {
+                    beginShape();
+                    vertex(0, 0);
+                    vertex(0, -unit);
+                    vertex(4 * offsetX, -unit + 4 * offsetY);
+                    vertex(4 * offsetX, 4 * offsetY);
+                    endShape();
+
+                    break;
+                }
+                case 1: {
+                    beginShape();
+                    vertex(0, 0);
+                    vertex(0, -4 * unit);
+                    vertex(offsetX, -4 * unit + offsetY);
+                    vertex(offsetX, offsetY);
+                    endShape();
+
+                    break;
+                }
+            }
+
+            break;
+        }
+        case 1: { // o형
+            fill(blockColors[type].front);
+            beginShape();
+            vertex(0, 0);
+            vertex(0, -2 * unit);
+            vertex(2 * offsetX, -2 * unit + 2 * offsetY);
+            vertex(2 * offsetX, 2 * offsetY);
+            endShape();
+
+            break;
+        }
+        case 2: { // T형
+            switch (r) {
+                case 0: {
+                    beginShape();
+                    vertex(0, 0);
+                    vertex(0, -unit);
+                    vertex(offsetX, -unit + offsetY);
+                    vertex(offsetX, -2 * unit + offsetY);
+                    vertex(2 * offsetX, -2 * unit + 2 * offsetY);
+                    vertex(2 * offsetX, -unit + 2 * offsetY);
+                    vertex(3 * offsetX, -unit + 3 * offsetY);
+                    vertex(3 * offsetX, 3 * offsetY);
+                    endShape();
+
+                    break;
+                }
+                case 1: {
+                    beginShape();
+                    vertex(0, 0);
+                    vertex(0, -3 * unit);
+                    vertex(offsetX, -3 * unit + offsetY);
+                    vertex(offsetX, -2 * unit + offsetY);
+                    vertex(2 * offsetX, -2 * unit + 2 * offsetY);
+                    vertex(2 * offsetX, -unit + 2 * offsetY);
+                    vertex(offsetX, -unit + offsetY);
+                    vertex(offsetX, offsetY);
+                    endShape();
+
+                    break;
+                }
+                case 2: {
+                    beginShape();
+                    vertex(0, -unit);
+                    vertex(0, -2 * unit);
+                    vertex(3 * offsetX, -2 * unit + 3 * offsetY);
+                    vertex(3 * offsetX, -unit + 3 * offsetY);
+                    vertex(2 * offsetX, -unit + 2 * offsetY);
+                    vertex(2 * offsetX, 2 * offsetY);
+                    vertex(offsetX, offsetY);
+                    vertex(offsetX, -unit + offsetY);
+                    endShape();
+
+                    break;
+                }
+                case 3: {
+                    beginShape();
+                    vertex(0, -unit);
+                    vertex(0, -2 * unit);
+                    vertex(offsetX, -2 * unit + offsetY);
+                    vertex(offsetX, -3 * unit + offsetY);
+                    vertex(2 * offsetX, -3 * unit + 2 * offsetY);
+                    vertex(2 * offsetX, 2 * offsetY);
+                    vertex(offsetX, offsetY);
+                    vertex(offsetX, -unit + offsetY);
+                    endShape();
+
+                    break;
+                }
+            }
+
+            break;
+        }
+        case 3: { // L형
+            switch (r) {
+                case 0: {
+                    beginShape();
+                    vertex(0, 0);
+                    vertex(0, -unit);
+                    vertex(2 * offsetX, -unit + 2 * offsetY);
+                    vertex(2 * offsetX, - 2 * unit + 2 * offsetY);
+                    vertex(3 * offsetX, - 2 * unit + 3 * offsetY);
+                    vertex(3 * offsetX, 3 * offsetY);
+                    endShape();
+
+                    break;
+                }
+                case 1: {
+                    beginShape();
+                    vertex(0, 0);
+                    vertex(0, -3 * unit);
+                    vertex(offsetX, -3 * unit + offsetY);
+                    vertex(offsetX, -unit + offsetY);
+                    vertex(2 * offsetX, -unit + 2 * offsetY);
+                    vertex(2 * offsetX, 2 * offsetY);
+                    endShape();
+
+                    break;
+                }
+                case 2: {
+                    beginShape();
+                    vertex(0, 0);
+                    vertex(0, -2 * unit);
+                    vertex(3 * offsetX, -2 * unit + 3 * offsetY);
+                    vertex(3 * offsetX, -unit + 3 * offsetY);
+                    vertex(offsetX, -unit + offsetY);
+                    vertex(offsetX, offsetY);
+                    endShape();
+
+                    break;
+                }
+                case 3: {
+                    beginShape();
+                    vertex(0, -2 * unit);
+                    vertex(0, -3 * unit);
+                    vertex(2 * offsetX, -3 * unit + 2 * offsetY);
+                    vertex(2 * offsetX, 2 * offsetY);
+                    vertex(offsetX, offsetY);
+                    vertex(offsetX, -2 * unit + offsetY);
+                    endShape();
+
+                    break;
+                }
+            }
+
+            break;
+        }
+        case 4: { // J형
+            switch (r) {
+                case 0: {
+                    beginShape();
+                    vertex(0, 0);
+                    vertex(0, -2 * unit);
+                    vertex(offsetX, -2 * unit + offsetY);
+                    vertex(offsetX, -unit + offsetY);
+                    vertex(3 * offsetX, -unit + 3 * offsetY);
+                    vertex(3 * offsetX, 3 * offsetY);
+                    endShape();
+
+                    break;
+                }
+                case 1: {
+                    beginShape();
+                    vertex(0, 0);
+                    vertex(0, -3 * unit);
+                    vertex(2 * offsetX, -3 * unit + 2 * offsetY);
+                    vertex(2 * offsetX, -2 * unit + 2 * offsetY);
+                    vertex(offsetX, -2 * unit + offsetY);
+                    vertex(offsetX, offsetY);
+                    endShape();
+
+                    break;
+                }
+                case 2: {
+                    beginShape();
+                    vertex(0, -unit);
+                    vertex(0, -2 * unit);
+                    vertex(3 * offsetX, -2 * unit + 3 * offsetY);
+                    vertex(3 * offsetX, 3 * offsetY);
+                    vertex(2 * offsetX, 2 * offsetY);
+                    vertex(2 * offsetX, -unit + 2 * offsetY);
+                    endShape();
+
+                    break;
+                }
+                case 3: {
+                    beginShape();
+                    vertex(0, 0);
+                    vertex(0, -unit);
+                    vertex(offsetX, -unit + offsetY);
+                    vertex(offsetX, -3 * unit + offsetY);
+                    vertex(2 * offsetX, -3 * unit + 2 * offsetY);
+                    vertex(2 * offsetX, 2 * offsetY);
+                    endShape();
+
+                    break;
+                }
+            }
+
+            break;
+        }
+        case 5: { // S형
+            switch (r % 2) {
+                case 0: {
+                    beginShape();
+                    vertex(0, 0);
+                    vertex(0, -unit);
+                    vertex(offsetX, -unit + offsetY);
+                    vertex(offsetX, -2 * unit + offsetY);
+                    vertex(3 * offsetX, -2 * unit + 3 * offsetY);
+                    vertex(3 * offsetX, -unit + 3 * offsetY);
+                    vertex(2 * offsetX, -unit + 2 * offsetY);
+                    vertex(2 * offsetX, 2 * offsetY);
+                    endShape();
+
+                    break;
+                }
+                case 1: {
+                    beginShape();
+                    vertex(0, -unit);
+                    vertex(0, -3 * unit);
+                    vertex(offsetX, -3 * unit + offsetY);
+                    vertex(offsetX, -2 * unit + offsetY);
+                    vertex(2 * offsetX, -2 * unit + 2 * offsetY);
+                    vertex(2 * offsetX, 2 * offsetY);
+                    vertex(offsetX, offsetY);
+                    vertex(offsetX, -unit + offsetY);
+                    endShape();
+
+                    break;
+                }
+            }
+
+            break;
+        }
+        case 6: { // S형
+            switch (r % 2) {
+                case 0: {
+                    fill(blockColors[type].front);
+                    beginShape();
+                    vertex(0, -unit);
+                    vertex(0, -2 * unit);
+                    vertex(2 * offsetX, -2 * unit + 2 * offsetY);
+                    vertex(2 * offsetX, -unit + 2 * offsetY);
+                    vertex(3 * offsetX, -unit + 3 * offsetY);
+                    vertex(3 * offsetX, 3 * offsetY);
+                    vertex(offsetX, offsetY);
+                    vertex(offsetX, -unit + offsetY);
+                    endShape();
+
+                    break;
+                }
+                case 1: {
+                    beginShape();
+                    vertex(0, 0);
+                    vertex(0, -2 * unit);
+                    vertex(offsetX, -2 * unit + offsetY);
+                    vertex(offsetX, -3 * unit + offsetY);
+                    vertex(2 * offsetX, -3 * unit + 2 * offsetY);
+                    vertex(2 * offsetX, -unit + 2 * offsetY);
+                    vertex(offsetX, -unit + offsetY);
+                    vertex(offsetX, offsetY);
+                    endShape();
+
+                    break;
+                }
+            }
+
+            break;
+        }
+
+    }
+    pop();
+}
+
 function splash(opacity) {
     noStroke();
     for (let i = 0; i < width / 6 * 4; i += 5) {
@@ -1584,13 +2585,22 @@ function drawNextBlock(x, y, nextBlock, nextRotate) {
     pop();
 }
 
-// function drawFront(shape, )
-
 function mouseClicked() {
     if (!gameStart) {
         gameStart = true;
         gameStartTime = frameCount;
     }
+
+    let copy = Array.from(Array(20), () => Array(10).fill(0));
+    for (let i = 0; i < 20; i++) {
+        for (let j = 0; j < 10; j++) {
+            copy[19 - i][j] = blockMap[j][i];
+        }
+    }
+
+    print(copy);
+
+
 }
 
 function getRandomInt(min, max) {
@@ -1629,12 +2639,19 @@ function keyPressed(key) {
             break;
         }
         case "KeyA": {
-            break;
-        }
-        case "KeyS": {
+            testBlock = (testBlock + 6) % 7;
             break;
         }
         case "KeyD": {
+            testBlock = (testBlock + 1) % 7;
+            break;
+        }
+        case "KeyS": {
+            testRotate = (testRotate + 3) % 4;
+            break;
+        }
+        case "KeyW": {
+            testRotate = (testRotate + 1) % 4;
             break;
         }
     }

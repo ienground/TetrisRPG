@@ -20,6 +20,7 @@ let charX, charY, charZ, charDirection, preCharX, preCharY, preCharZ, preCharDir
 let movingStartTime = 0, movingSignal = false, footDirection = false;
 let magnet = 3, heart = 3;
 let number = [];
+let bgm;
 
 let blockWidth = [
     [4, 1, 4, 1],
@@ -54,6 +55,7 @@ function preload() {
     imgScore = loadImage("assets/score.png");
     imgHeart = loadImage("assets/heart.png");
     imgMagnet = loadImage("assets/magnet.png");
+    bgm = loadSound("assets/bgm.mp3");
 
     number.push(loadImage("assets/num0.png"));
     number.push(loadImage("assets/num1.png"));
@@ -72,6 +74,8 @@ function setup() {
     angleMode(DEGREES);
     colorMode(RGB);
     background(255);
+
+    bgm.loop();
 
     blockColors = [
         { front : color('#344040'), top : color('#C2C2C2'), side : color('#808893') },

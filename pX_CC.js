@@ -1,7 +1,6 @@
 /**
- * Developed by
+ * Designed, Developed by
  * @ienground_
- * Final Project of Intro to Creative Computing (2021)
  * Geometry Tetris RPG
  *
  * Ericano Rhee on github.com/ienground
@@ -49,7 +48,7 @@ const DIRECTION_LEFT = 3;
 // rotate : 시계 방향으로 0, 1, 2, 3
 
 function preload() {
-    pixelFont = loadFont("assets/ThaleahFat.ttf");
+    pixelFont = loadFont("assets/DungGeunMo.ttf");
     gmSansMedium = loadFont("assets/GmarketSansMedium.otf");
     imgNextBlock = loadImage("assets/nextBlock.png");
     imgScore = loadImage("assets/score.png");
@@ -2864,12 +2863,12 @@ function splash(opacity) {
     textFont(pixelFont);
     textAlign(CENTER, CENTER);
     textSize(100);
-    text("TETRIS RPG", width / 2, height / 2 - 30);
+    text("C:\\TetrisRPG", width / 2, height / 2 - 50);
     textSize(25);
-    text("INTRO TO CREATIVE COMPUTING FINAL PROJECT", width / 2, height / 2 + 20);
-    text("BY @IENGROUND of SOGANG ART%TECHNOLOGY", width / 2, height / 2 + 40);
+    text("ART&TECHNOLOGY CONFERENCE 2021", width / 2, height / 2 + 40);
+    text("BY @IENGROUND of SOGANG ART&TECHNOLOGY", width / 2, height / 2 + 60);
 
-    text("Click to Start!", width / 2, height / 2 + 80);
+    text("Click to Start!", width / 2, height / 2 + 100);
 }
 
 function drawNextBlock(x, y, nextBlock, nextRotate) {
@@ -3291,7 +3290,7 @@ function keyPressed(key) {
             if (charY + blockWidth[currentBlock][currentRotate] - 1 < 10) {
                 if (magnet > 0) {
                     currentX = charY;
-                    magnet--;
+                    // magnet--;
                 }
             }
             break;
@@ -3332,6 +3331,9 @@ function keyPressed(key) {
         case "KeyD": {
             currentRotate = (currentRotate + 1) % 4;
             break;
+        }
+        case "KeyF": { // 블럭 당기기
+
         }
     }
 }

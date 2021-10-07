@@ -16,10 +16,12 @@ let currentX, currentY, currentRotate, nextRotate, currentHurt = false;
 let lastBlock, lastX, lastY, lastRotate;
 let score = 0;
 let charX, charY, charZ, charDirection, preCharX, preCharY, preCharZ, preCharDirection;
+let isBack = false;
 let movingStartTime = 0, movingSignal = false, footDirection = false;
-let magnet = 3, heart = 3;
+let magnet = 3, heart = 3333;
 let number = [];
 let bgm;
+let difficulty = 0;
 
 let blockWidth = [
     [4, 1, 4, 1],
@@ -177,7 +179,24 @@ function draw() {
         drawCubeTop(color(40), - 2 * height / size * sin(60),  + 4 * height / size)
         drawCubeSide(color(255, 50), - 2 * height / size * sin(60), 0);
 
-        let fallingTime = 30;
+        let fallingTime;
+        switch (difficulty) {
+            case 0:
+                fallingTime = 60;
+                break;
+            case 1:
+                fallingTime = 40;
+                break;
+            case 2:
+                fallingTime = 20;
+                break;
+            case 3:
+                fallingTime = 10;
+                break;
+            default:
+                fallingTime = 60;
+                break;
+        }
 
         crashLine();
         gameOver = setGameOver();
@@ -214,7 +233,7 @@ function draw() {
                     }
 
                     if (i === charY && j === charZ) {
-                        drawCharacter(charX, charY, charZ, charDirection, preCharX, preCharY, preCharZ, preCharDirection);
+                        drawCharacter(charX, charY, charZ, charDirection, preCharX, preCharY, preCharZ, preCharDirection, isBack);
                     }
                 }
             }
@@ -226,7 +245,7 @@ function draw() {
                     }
 
                     if (i === charY && j === charZ) {
-                        drawCharacter(charX, charY, charZ, charDirection, preCharX, preCharY, preCharZ, preCharDirection);
+                        drawCharacter(charX, charY, charZ, charDirection, preCharX, preCharY, preCharZ, preCharDirection, isBack);
                     }
                 }
             }
@@ -248,6 +267,8 @@ function draw() {
             nextBlock = getRandomInt(0, 6);
             currentHurt = false;
 
+            print(lastBlockMap);
+
         }
 
         drawCubeFront(color(255, 70), - 2 * height / size * sin(60), 0);
@@ -262,6 +283,7 @@ function draw() {
         square(2 * height / size * sin(60) + 140, 3 * height / size, 30, 5);
         square(2 * height / size * sin(60) + 140, 3 * height / size - 40, 30, 5);
         square(2 * height / size * sin(60) + 60, 3 * height / size - 40, 30, 5);
+        square(- 2 * height / size * sin(60) - 50, 3 * height / size - 80, 30, 5);
         square(- 2 * height / size * sin(60) - 50, 3 * height / size - 40, 30, 5);
         square(- 2 * height / size * sin(60) - 50, 3 * height / size, 30, 5);
         textFont(gmSansMedium);
@@ -274,6 +296,7 @@ function draw() {
         text("S", 2 * height / size * sin(60) + 155, 3 * height / size + 15);
         text("▲", 2 * height / size * sin(60) + 75, 3 * height / size - 25);
         text("W", 2 * height / size * sin(60) + 155, 3 * height / size - 25);
+        text("F", - 2 * height / size * sin(60) - 35, 3 * height / size - 65);
         text("A", - 2 * height / size * sin(60) - 35, 3 * height / size - 25);
         text("D", - 2 * height / size * sin(60) - 35, 3 * height / size + 15);
         textAlign(LEFT, TOP);
@@ -281,6 +304,7 @@ function draw() {
         text("Press key to\ncontrol character.", 2 * height / size * sin(60) + 20, 3 * height / size + 50);
         textAlign(RIGHT, TOP);
         textSize(16);
+        text("Pull", - 2 * height / size * sin(60) - 70, 3 * height / size - 70);
         text("Magnet", - 2 * height / size * sin(60) - 70, 3 * height / size - 30);
         text("Rotate", - 2 * height / size * sin(60) - 70, 3 * height / size + 10);
 
@@ -317,12 +341,13 @@ function checkCharMove(x, y, z) {
 
 function checkCharMoveLast(x, y, z) {
     if (x === 0) {
+        print('x == 0')
         return true;
-    } else {
-        if (lastBlockMap[y][z]) {
-            return false;
-        }
+    } else if (lastBlockMap[y][z]) {
+        print(y, z, 'lastBlockMap exist')
+        return false;
     }
+    print(y, z, 'true');
     return true;
 }
 
@@ -1123,7 +1148,7 @@ function setLastBlockInfo(type, x, y, r) {
     }
 }
 
-function drawCharacter(x, y, z, r, px, py, pz, pr) {
+function drawCharacter(x, y, z, r, px, py, pz, pr, isBack = false) {
     // moving time : 5 frame
     let duration = 5;
     push();
@@ -1206,10 +1231,14 @@ function drawCharacter(x, y, z, r, px, py, pz, pr) {
             ellipse(-unit * 0.1, unit * 0.4, unit * 0.5, unit * 0.6);
         }
     } else if (y !== py) {
-        if (y - py > 0) { // 우리를 봐야 함
-            charDirection = DIRECTION_REAR;
+        if (isBack) {
+            isBack = false
         } else {
-            charDirection = DIRECTION_FRONT;
+            if (y - py > 0) { // 우리를 봐야 함
+                charDirection = DIRECTION_REAR;
+            } else {
+                charDirection = DIRECTION_FRONT;
+            }
         }
 
         let my = map(frameCount - movingStartTime, 0, duration, py, y);
@@ -2868,7 +2897,22 @@ function splash(opacity) {
     text("ART&TECHNOLOGY CONFERENCE 2021", width / 2, height / 2 + 40);
     text("BY @IENGROUND of SOGANG ART&TECHNOLOGY", width / 2, height / 2 + 60);
 
-    text("Click to Start!", width / 2, height / 2 + 100);
+    text("DIFFICULTY", width / 2, height / 2 + 100);
+
+    stroke(255);
+    strokeWeight(5);
+    fill(color(255, 100));
+    rect(width / 2 - 330, height / 2 + 150, 120, 40);
+    rect(width / 2 - 150, height / 2 + 150, 120, 40);
+    rect(width / 2 + 30, height / 2 + 150, 120, 40);
+    rect(width / 2 + 210, height / 2 + 150, 120, 40);
+
+    noStroke();
+    fill(255, opacity);
+    text("EASY", width / 2 - 270, height / 2 + 165);
+    text("MEDIUM", width / 2 - 90, height / 2 + 165);
+    text("HARD", width / 2 + 90, height / 2 + 165);
+    text("EXPERT", width / 2 + 270, height / 2 + 165);
 }
 
 function drawNextBlock(x, y, nextBlock, nextRotate) {
@@ -3195,8 +3239,25 @@ function setGameOver() {
 
 function mouseClicked() {
     if (!gameStart) {
-        gameStart = true;
-        gameStartTime = frameCount;
+        if (mouseY >= height / 2 + 150 && mouseY <= height / 2 + 190) {
+            if (mouseX >= width / 2 - 330 && mouseX <= width / 2 - 210) {
+                gameStart = true;
+                gameStartTime = frameCount;
+                difficulty = 0;
+            } else if (mouseX >= width / 2 - 150 && mouseX <= width / 2 - 30) {
+                gameStart = true;
+                gameStartTime = frameCount;
+                difficulty = 1;
+            } else if (mouseX >= width / 2 + 30 && mouseX <= width / 2 + 150) {
+                gameStart = true;
+                gameStartTime = frameCount;
+                difficulty = 2;
+            } else if (mouseX >= width / 2 + 210 && mouseX <= width / 2 + 330) {
+                gameStart = true;
+                gameStartTime = frameCount;
+                difficulty = 3;
+            }
+        }
     }
 
     let copy = Array.from(Array(24), () => Array(10).fill(0));
@@ -3333,7 +3394,62 @@ function keyPressed(key) {
             break;
         }
         case "KeyF": { // 블럭 당기기
-
+            // 만약 방향 앞 칸에 블럭이 있고 움직일 수 있다면, 뒤로 가면서 당긴다.
+            if (charDirection === DIRECTION_FRONT) {
+                if (charY < 9) {
+                    if (!checkCharMoveLast(charX, charY - blockWidth[lastBlock][lastRotate], charZ) || !checkCharMoveLast(charX, charY - blockWidth[lastBlock][lastRotate], charZ + 1)) { // 마지막 블럭으로 막혀 있으면
+                        print("condition 1")
+                        print(charY, lastX, blockWidth[lastBlock][lastRotate])
+                        if (charY === lastX + blockWidth[lastBlock][lastRotate] && lastX >= 0) {
+                            print("condition 2")
+                            let cor = getBlockCor(lastBlock, lastX + 1, lastY, lastRotate);
+                            let isAccepted = true;
+                            for (let data of cor) {
+                                if (blockMap[data.x][data.y]) {
+                                    isAccepted = false;
+                                    break;
+                                }
+                            }
+                            if (isAccepted) {
+                                print("condition 3")
+                                lastX++;
+                                setLastBlockInfo(lastBlock, lastX, lastY, lastRotate);
+                            }
+                        }
+                    }
+                    if (checkCharMove(charX, charY + 1, charZ) && checkCharMoveLast(charX, charY + 1, charZ) && checkCharMove(charX, charY + 1, charZ + 1) && checkCharMoveLast(charX, charY + 1, charZ + 1)) {
+                        charY++;
+                        isBack = true;
+                    }
+                }
+            } else if (charDirection === DIRECTION_REAR) {
+                if (charY >= 0) {
+                    if (!checkCharMoveLast(charX, charY + blockWidth[lastBlock][lastRotate], charZ) || !checkCharMoveLast(charX, charY + blockWidth[lastBlock][lastRotate], charZ + 1)) { // 마지막 블럭으로 막혀 있으면
+                        print("condition 1")
+                        print(charY, lastX, blockWidth[lastBlock][lastRotate])
+                        if (charY + 1 === lastX && lastX + blockWidth[lastBlock][lastRotate] <= 10 && charY > 0) {
+                            print("condition 2")
+                            let cor = getBlockCor(lastBlock, lastX - 1, lastY, lastRotate);
+                            let isAccepted = true;
+                            for (let data of cor) {
+                                if (blockMap[data.x][data.y]) {
+                                    isAccepted = false;
+                                    break;
+                                }
+                            }
+                            if (isAccepted) {
+                                print("condition 3")
+                                lastX--;
+                                setLastBlockInfo(lastBlock, lastX, lastY, lastRotate);
+                            }
+                        }
+                    }
+                    if (checkCharMove(charX, charY - 1, charZ) && checkCharMoveLast(charX, charY - 1, charZ) && checkCharMove(charX, charY - 1, charZ + 1) && checkCharMoveLast(charX, charY - 1, charZ + 1)) {
+                        charY--;
+                        isBack = true;
+                    }
+                }
+            }
         }
     }
 }

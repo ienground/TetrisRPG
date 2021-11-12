@@ -7,7 +7,7 @@
  */
 
 // typeface
-let pixelFont, gmSansMedium;
+let typefaceRegular, typefaceBold;
 let size = 5.2;
 let stars = [];
 let blockColors;
@@ -18,10 +18,13 @@ let score = 0;
 let charX, charY, charZ, charDirection, preCharX, preCharY, preCharZ, preCharDirection;
 let isBack = false;
 let movingStartTime = 0, movingSignal = false, footDirection = false;
-let magnet = 3, heart = 3333;
+let magnet = 5, heart = 5;
 let number = [];
-let bgm;
+let bgm, crashSound;
 let difficulty = 0;
+let logo, logo_typo;
+
+let crashTime = -90;
 
 let blockWidth = [
     [4, 1, 4, 1],
@@ -50,13 +53,16 @@ const DIRECTION_LEFT = 3;
 // rotate : 시계 방향으로 0, 1, 2, 3
 
 function preload() {
-    pixelFont = loadFont("assets/DungGeunMo.ttf");
-    gmSansMedium = loadFont("assets/GmarketSansMedium.otf");
+    typefaceRegular = loadFont("assets/Pretendard-Regular.otf");
+    typefaceBold = loadFont("assets/Pretendard-Black.otf");
     imgNextBlock = loadImage("assets/nextBlock.png");
     imgScore = loadImage("assets/score.png");
     imgHeart = loadImage("assets/heart.png");
     imgMagnet = loadImage("assets/magnet.png");
-    bgm = loadSound("assets/bgm.mp3");
+    bgm = createAudio("assets/bgm.mp3");
+    crashSound = createAudio("assets/crash.mp3");
+    logo = loadImage("assets/logo.png");
+    logo_typo = loadImage("assets/logo_typo.png");
 
     number.push(loadImage("assets/num0.png"));
     number.push(loadImage("assets/num1.png"));
@@ -76,6 +82,7 @@ function setup() {
     colorMode(RGB);
     background(255);
 
+    bgm.volume(0.3);
     bgm.loop();
 
     blockColors = [
@@ -147,13 +154,13 @@ function draw() {
         }
 
         fill(255);
-        textFont(pixelFont);
+        textFont(typefaceBold);
         textAlign(CENTER, CENTER);
         textSize(100);
-        text("GAME OVER", width / 2, height / 2 - 30);
+        text("Game Over :\'(", width / 2, height / 2 - 30);
+        textFont(typefaceRegular);
         textSize(25);
-        text("YOUR SCORE IS " + score + "!", width / 2, height / 2 + 20);
-        text("THANKS FOR PLAYING", width / 2, height / 2 + 40);
+        text("Your score is " + score + "!\nThanks for playing :D", width / 2, height / 2 + height / 10);
     } else {
         // 좌표 : 높이 기준.
         push();
@@ -176,7 +183,9 @@ function draw() {
         }
 
         drawCubeFront(color(0), - 2 * height / size * sin(60) + 2 * height / size * sin(60) * 0.45,  - height / size * 0.45);
-        drawCubeTop(color(40), - 2 * height / size * sin(60),  + 4 * height / size)
+        drawCubeTop(color(40), - 2 * height / size * sin(60),+ 4 * height / size)
+
+        if (frameCount - crashTime < 60 * 2) drawCubeBottomCrash(-2 * height / size * sin(60),+ 4 * height / size)
         drawCubeSide(color(255, 50), - 2 * height / size * sin(60), 0);
 
         let fallingTime;
@@ -232,7 +241,7 @@ function draw() {
                         }
                     }
 
-                    if (i === charY && j === charZ) {
+                    if (i === charY && j - 1 === charZ) {
                         drawCharacter(charX, charY, charZ, charDirection, preCharX, preCharY, preCharZ, preCharDirection, isBack);
                     }
                 }
@@ -244,7 +253,7 @@ function draw() {
                         drawBlockCube(-1, i, j);
                     }
 
-                    if (i === charY && j === charZ) {
+                    if (i === charY && j - 1 === charZ) {
                         drawCharacter(charX, charY, charZ, charDirection, preCharX, preCharY, preCharZ, preCharDirection, isBack);
                     }
                 }
@@ -281,32 +290,37 @@ function draw() {
         square(2 * height / size * sin(60) + 60, 3 * height / size, 30, 5);
         square(2 * height / size * sin(60) + 100, 3 * height / size, 30, 5);
         square(2 * height / size * sin(60) + 140, 3 * height / size, 30, 5);
-        square(2 * height / size * sin(60) + 140, 3 * height / size - 40, 30, 5);
+        // square(2 * height / size * sin(60) + 140, 3 * height / size - 40, 30, 5);
+        rect(2 * height / size * sin(60) + 140, 3 * height / size - 40, 90, 30, 5);
         square(2 * height / size * sin(60) + 60, 3 * height / size - 40, 30, 5);
+        square(- 2 * height / size * sin(60) - 50, 3 * height / size - 120, 30, 5);
         square(- 2 * height / size * sin(60) - 50, 3 * height / size - 80, 30, 5);
         square(- 2 * height / size * sin(60) - 50, 3 * height / size - 40, 30, 5);
         square(- 2 * height / size * sin(60) - 50, 3 * height / size, 30, 5);
-        textFont(gmSansMedium);
+        textFont(typefaceBold);
         textAlign(CENTER, CENTER);
         textSize(16);
         noStroke(); fill(255);
         text("◀", 2 * height / size * sin(60) + 35, 3 * height / size + 15);
         text("▼", 2 * height / size * sin(60) + 75, 3 * height / size + 15);
         text("▶", 2 * height / size * sin(60) + 115, 3 * height / size + 15);
-        text("S", 2 * height / size * sin(60) + 155, 3 * height / size + 15);
+        text("ctrl", 2 * height / size * sin(60) + 155, 3 * height / size + 15);
         text("▲", 2 * height / size * sin(60) + 75, 3 * height / size - 25);
-        text("W", 2 * height / size * sin(60) + 155, 3 * height / size - 25);
-        text("F", - 2 * height / size * sin(60) - 35, 3 * height / size - 65);
-        text("A", - 2 * height / size * sin(60) - 35, 3 * height / size - 25);
-        text("D", - 2 * height / size * sin(60) - 35, 3 * height / size + 15);
+        text("Space Bar", 2 * height / size * sin(60) + 185, 3 * height / size - 25);
+        text("A", - 2 * height / size * sin(60) - 35, 3 * height / size - 105);
+        text("S", - 2 * height / size * sin(60) - 35, 3 * height / size - 65);
+        text("D", - 2 * height / size * sin(60) - 35, 3 * height / size - 25);
+        text("F", - 2 * height / size * sin(60) - 35, 3 * height / size + 15);
         textAlign(LEFT, TOP);
         textSize(16);
-        text("Press key to\ncontrol character.", 2 * height / size * sin(60) + 20, 3 * height / size + 50);
+        textFont(typefaceRegular);
+        text("Press key to control character.\nSpace bar to ascend, ctrl key to descend.", 2 * height / size * sin(60) + 20, 3 * height / size + 50);
         textAlign(RIGHT, TOP);
         textSize(16);
-        text("Pull", - 2 * height / size * sin(60) - 70, 3 * height / size - 70);
-        text("Magnet", - 2 * height / size * sin(60) - 70, 3 * height / size - 30);
-        text("Rotate", - 2 * height / size * sin(60) - 70, 3 * height / size + 10);
+        text("Pull", - 2 * height / size * sin(60) - 70, 3 * height / size - 110);
+        text("Hard Drop", - 2 * height / size * sin(60) - 70, 3 * height / size - 70);
+        text("Rotate", - 2 * height / size * sin(60) - 70, 3 * height / size - 30);
+        text("Magnet", - 2 * height / size * sin(60) - 70, 3 * height / size + 10);
 
         // heart and magnet
         for (let i = 0; i < magnet; i++) {
@@ -341,13 +355,13 @@ function checkCharMove(x, y, z) {
 
 function checkCharMoveLast(x, y, z) {
     if (x === 0) {
-        print('x == 0')
+        // print('x == 0')
         return true;
     } else if (lastBlockMap[y][z]) {
-        print(y, z, 'lastBlockMap exist')
+        // print(y, z, 'lastBlockMap exist')
         return false;
     }
-    print(y, z, 'true');
+    // print(y, z, 'true');
     return true;
 }
 
@@ -1515,6 +1529,20 @@ function drawCubeTop(c, px, py) {
     vertex(2 * height / size * sin(60), height / size);
     endShape();
 
+    pop();
+}
+
+function drawCubeBottomCrash(px, py) {
+    push();
+    noStroke();
+    fill(255, 0, 0);
+    translate(px, py);
+    beginShape();
+    vertex(0, 0);
+    vertex(2 * height / size * sin(60) * 0.25 * 0.45, -height / size * 0.25 * 0.45);
+    vertex(2 * height / size * sin(60) + 2 * height / size * sin(60) * 0.25 * 0.45, height / size - height / size * 0.25 * 0.45);
+    vertex(2 * height / size * sin(60), height / size);
+    endShape();
     pop();
 }
 
@@ -2885,34 +2913,32 @@ function splash(opacity) {
         let c = lerpColor(color('#FF4081'), color('#7C4DFF'), i / (width / 6 * 4))
         c.setAlpha(opacity);
         fill(c);
-        rect(width / 6 + i, height / 4, 6, height / 4 * 2);
+        rect(width / 6 + i, height / 6, 6, height / 6 * 4);
     }
 
     fill(255, opacity);
-    textFont(pixelFont);
+    textFont(typefaceBold);
     textAlign(CENTER, CENTER);
-    textSize(100);
-    text("C:\\TetrisRPG", width / 2, height / 2 - 50);
-    textSize(25);
-    text("ART&TECHNOLOGY CONFERENCE 2021", width / 2, height / 2 + 40);
-    text("BY @IENGROUND of SOGANG ART&TECHNOLOGY", width / 2, height / 2 + 60);
+    logo.resize(0, height / 2);
+    image(logo, width / 6 + width / 40, height / 2 - logo.height / 2);
+    logo_typo.resize(width / 4, 0);
+    image(logo_typo, width / 4 + logo.width, height / 2 - logo.height / 2 + logo_typo.height);
+    textSize(height / 40);
+    textAlign(LEFT);
 
-    text("DIFFICULTY", width / 2, height / 2 + 100);
-
-    stroke(255);
-    strokeWeight(5);
-    fill(color(255, 100));
-    rect(width / 2 - 330, height / 2 + 150, 120, 40);
-    rect(width / 2 - 150, height / 2 + 150, 120, 40);
-    rect(width / 2 + 30, height / 2 + 150, 120, 40);
-    rect(width / 2 + 210, height / 2 + 150, 120, 40);
-
-    noStroke();
     fill(255, opacity);
-    text("EASY", width / 2 - 270, height / 2 + 165);
-    text("MEDIUM", width / 2 - 90, height / 2 + 165);
-    text("HARD", width / 2 + 90, height / 2 + 165);
-    text("EXPERT", width / 2 + 270, height / 2 + 165);
+    text("Art&Technology Conference 2021\nBy @ienground of Sogang Univ.", width / 4 + logo.width, height / 2 - logo.height / 2 + logo_typo.height * 3);
+    rect(width / 4 + logo.width, height / 2 + logo.height / 2 - logo_typo.height * 3.5, logo_typo.height * 5, logo_typo.height, logo_typo.height / 2);
+    rect(width / 4 + logo.width + logo_typo.height * 6, height / 2 + logo.height / 2 - logo_typo.height * 3.5, logo_typo.height * 5, logo_typo.height, logo_typo.height / 2);
+    rect(width / 4 + logo.width, height / 2 + logo.height / 2 - logo_typo.height * 2, logo_typo.height * 5, logo_typo.height, logo_typo.height / 2);
+    rect(width / 4 + logo.width + logo_typo.height * 6, height / 2 + logo.height / 2 - logo_typo.height * 2, logo_typo.height * 5, logo_typo.height, logo_typo.height / 2);
+
+    textAlign(CENTER);
+    fill(0, opacity);
+    text("EASY", width / 4 + logo.width, height / 2 + logo.height / 2 - logo_typo.height * 3.5, logo_typo.height * 5, logo_typo.height);
+    text("MEDIUM",width / 4 + logo.width + logo_typo.height * 6, height / 2 + logo.height / 2 - logo_typo.height * 3.5, logo_typo.height * 5, logo_typo.height);
+    text("HARD",width / 4 + logo.width, height / 2 + logo.height / 2 - logo_typo.height * 2, logo_typo.height * 5, logo_typo.height);
+    text("EXPERT",width / 4 + logo.width + logo_typo.height * 6, height / 2 + logo.height / 2 - logo_typo.height * 2, logo_typo.height * 5, logo_typo.height);
 }
 
 function drawNextBlock(x, y, nextBlock, nextRotate) {
@@ -3208,7 +3234,7 @@ function crashLine() {
             }
         }
         if (count === 10) {
-            score += 10;
+            score += 10 * (difficulty * 0.5 + 1);
             print(score);
 
             // 한 줄씩 당기기
@@ -3222,6 +3248,9 @@ function crashLine() {
             }
 
             lastY--;
+            crashSound.play();
+
+            crashTime = frameCount;
         }
     }
 }
@@ -3239,20 +3268,22 @@ function setGameOver() {
 
 function mouseClicked() {
     if (!gameStart) {
-        if (mouseY >= height / 2 + 150 && mouseY <= height / 2 + 190) {
-            if (mouseX >= width / 2 - 330 && mouseX <= width / 2 - 210) {
+        if (mouseY >= height / 2 + logo.height / 2 - logo_typo.height * 3.5 && mouseY <= height / 2 + logo.height / 2 - logo_typo.height * 2.5) {
+            if (mouseX >= width / 4 + logo.width && mouseX <= width / 4 + logo.width + logo_typo.height * 5) {
                 gameStart = true;
                 gameStartTime = frameCount;
                 difficulty = 0;
-            } else if (mouseX >= width / 2 - 150 && mouseX <= width / 2 - 30) {
+            } else if (mouseX >= width / 4 + logo.width + logo_typo.height * 6 && mouseX <= width / 4 + logo.width + logo_typo.height * 6 + logo_typo.height * 5) {
                 gameStart = true;
                 gameStartTime = frameCount;
                 difficulty = 1;
-            } else if (mouseX >= width / 2 + 30 && mouseX <= width / 2 + 150) {
+            }
+        } else if (mouseY >= height / 2 + logo.height / 2 - logo_typo.height * 2 && mouseY <= height / 2 + logo.height / 2 - logo_typo.height) {
+            if (mouseX >= width / 4 + logo.width && mouseX <= width / 4 + logo.width + logo_typo.height * 5) {
                 gameStart = true;
                 gameStartTime = frameCount;
                 difficulty = 2;
-            } else if (mouseX >= width / 2 + 210 && mouseX <= width / 2 + 330) {
+            } else if (mouseX >= width / 4 + logo.width + logo_typo.height * 6 && mouseX <= width / 4 + logo.width + logo_typo.height * 6 + logo_typo.height * 5) {
                 gameStart = true;
                 gameStartTime = frameCount;
                 difficulty = 3;
@@ -3347,23 +3378,27 @@ function keyPressed(key) {
             }
             break;
         }
-        case "KeyA": { // magnet
+        case "KeyF": { // magnet
             if (charY + blockWidth[currentBlock][currentRotate] - 1 < 10) {
                 if (magnet > 0) {
                     currentX = charY;
-                    // magnet--;
+                    magnet--;
                 }
             }
             break;
         }
-        case "KeyS": {
+        case "ControlRight":
+        case "ControlLeft": {
+            // print("charZ :" + charZ + ", lastY : " + lastY + ", blockHeight : " + blockWidth[lastBlock][(lastRotate + 1) % 4]);
             if (charZ > 0) {
                 if (!checkCharMoveLast(charX, charY, charZ - 1)) { // 마지막 블럭으로 막혀 있으면
-                    print(charZ, lastY + blockWidth[lastBlock][(lastRotate + 1) % 4]);
-                    if (charZ === lastY + blockWidth[lastBlock][(lastRotate + 1) % 4] && lastY - blockWidth[lastBlock][(lastRotate + 1) % 4] > 0) {
+                    // print("charZ :" + charZ + ", lastY : " + lastY + ", blockHeight : " + blockWidth[lastBlock][(lastRotate + 1) % 4]);
+                    if (charZ === lastY + blockWidth[lastBlock][(lastRotate + 1) % 4] && charZ - 1 - blockWidth[lastBlock][(lastRotate + 1) % 4]>= 0) { // 블럭 맞추고, 높이조건
                         let cor = getBlockCor(lastBlock, lastX, lastY - 1, lastRotate);
                         let isAccepted = true;
+                        // print(cor);
                         for (let data of cor) {
+                            // print(data.x, data.y, blockMap[data.x][data.y]);
                             if (blockMap[data.x][data.y]) {
                                 isAccepted = false;
                                 break;
@@ -3383,17 +3418,19 @@ function keyPressed(key) {
             }
             break;
         }
-        case "KeyW": {
+        case "Space": {
             if (charZ < 19) {
                 charZ++;
             }
             break;
         }
         case "KeyD": {
-            currentRotate = (currentRotate + 1) % 4;
+            if (currentX + blockWidth[currentBlock][(currentRotate + 1) % 4] < 10) {
+                currentRotate = (currentRotate + 1) % 4;
+            }
             break;
         }
-        case "KeyF": { // 블럭 당기기
+        case "KeyA": { // 블럭 당기기
             // 만약 방향 앞 칸에 블럭이 있고 움직일 수 있다면, 뒤로 가면서 당긴다.
             if (charDirection === DIRECTION_FRONT) {
                 if (charY < 9) {
@@ -3450,6 +3487,17 @@ function keyPressed(key) {
                     }
                 }
             }
+            break;
+        }
+        case "KeyS": {
+            let down = 0;
+            for (down = 0; down <= currentY; down++) {
+                if (!(checkBlockInfo(currentBlock, currentX, currentY - down - 1, currentRotate) && checkLastBlockInfo(currentBlock, currentX, currentY - down - 1, currentRotate))) {
+                    break
+                }
+            }
+            currentY -= down;
+            break;
         }
     }
 }
